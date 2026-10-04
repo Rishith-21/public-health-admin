@@ -9,10 +9,13 @@ import {
 import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
 import Workers from "./pages/workers";
+import WorkerDetails from "./pages/worker-details";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { LocalizationProvider } from "./localization";
 
 function App() {
   return (
+    <LocalizationProvider>
     <BrowserRouter>
       <Routes>
         <Route
@@ -32,6 +35,11 @@ function App() {
             path="/workers"
             element={<Workers />}
           />
+
+          <Route
+            path="/workers/:workerId"
+            element={<WorkerDetails />}
+          />
         </Route>
 
         <Route
@@ -40,6 +48,7 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
+    </LocalizationProvider>
   );
 }
 

@@ -1,54 +1,65 @@
 
 import { useEffect, useState } from "react";
-
-type Worker = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  service: string;
-};
-
-const STORAGE_KEY = "admin_workers";
+import { Link } from "react-router-dom";
+import AdminHeader from "../components/AdminHeader";
+import { formatWorkerNumber, getNextWorkerNumber, getStoredWorkers, type Worker, WORKERS_STORAGE_KEY } from "../data/workers";
+import { useLocalization } from "../localization";
 
 const emptyForm = {
   name: "",
   email: "",
   phone: "",
   service: "",
+  workerNumber: "",
+  username: "",
+  password: "",
+  points: 0,
+  pickups: 0,
 };
 
 function Workers() {
-  const [workers, setWorkers] = useState<Worker[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) as Worker[] : [];
-    } catch {
-      return [];
-    }
-  });
+  const { t } = useLocalization();
+  const [workers, setWorkers] = useState<Worker[]>(() =>
+    getStoredWorkers().map((worker, index) => ({
+      ...worker,
+      workerNumber: worker.workerNumber ?? formatWorkerNumber(index + 1),
+      username: worker.username ?? "",
+      password: worker.password ?? "",
+    })),
+  );
 
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
+  const [notice, setNotice] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workers));
+    localStorage.setItem(WORKERS_STORAGE_KEY, JSON.stringify(workers));
   }, [workers]);
 
   function openAddForm() {
-    setForm(emptyForm);
+    setNotice("");
+    setForm({ ...emptyForm, workerNumber: getNextWorkerNumber(workers) });
+    setFormError("");
     setEditingId(null);
     setShowForm(true);
   }
 
   function openEditForm(worker: Worker) {
+    setNotice("");
+    setFormError("");
     setForm({
       name: worker.name,
       email: worker.email,
       phone: worker.phone,
       service: worker.service,
+      workerNumber: worker.workerNumber ?? "",
+      username: worker.username ?? "",
+      password: worker.password ?? "",
+      points: worker.points ?? 0,
+      pickups: worker.pickups ?? 0,
     });
     setEditingId(worker.id);
     setShowForm(true);
@@ -56,6 +67,15 @@ function Workers() {
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const normalizedUsername = form.username.trim().toLocaleLowerCase();
+    const usernameIsTaken = workers.some((worker) =>
+      worker.id !== editingId && worker.username?.trim().toLocaleLowerCase() === normalizedUsername
+    );
+    if (usernameIsTaken) {
+      setFormError(t("usernameExists"));
+      return;
+    }
 
     if (editingId) {
       setWorkers((current) =>
@@ -65,6 +85,7 @@ function Workers() {
             : worker
         )
       );
+      setNotice(t("workerSaved"));
     } else {
       const newWorker: Worker = {
         id: crypto.randomUUID(),
@@ -72,6 +93,7 @@ function Workers() {
       };
 
       setWorkers((current) => [...current, newWorker]);
+      setNotice(t("workerAdded"));
     }
 
     setShowForm(false);
@@ -81,7 +103,7 @@ function Workers() {
 
   function handleDelete(id: string) {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this worker?"
+      t("deleteConfirmation")
     );
 
     if (confirmed) {
@@ -92,98 +114,121 @@ function Workers() {
   }
 
   const filteredWorkers = workers.filter((worker) => {
-    const query = search.toLowerCase();
+    const query = search.toLocaleLowerCase();
+    const localizedService = t(
+      worker.service.toLowerCase() as "pickup" | "delivery" | "collection" | "other",
+    ).toLocaleLowerCase();
 
     return (
-      worker.name.toLowerCase().includes(query) ||
-      worker.email.toLowerCase().includes(query) ||
-      worker.service.toLowerCase().includes(query)
+      worker.name.toLocaleLowerCase().includes(query) ||
+      worker.workerNumber?.toLocaleLowerCase().includes(query) ||
+      worker.username?.toLocaleLowerCase().includes(query) ||
+      worker.email.toLocaleLowerCase().includes(query) ||
+      worker.service.toLocaleLowerCase().includes(query) ||
+      localizedService.includes(query)
     );
   });
 
   return (
-    <div className="workers-page">
+    <div className="app-shell">
+      <AdminHeader />
+      <main className="workers-page">
       <div className="workers-header">
         <div>
-          <h1>Worker Management</h1>
-          <p>Add and manage registered workers.</p>
+          <p className="eyebrow">{t("workers")}</p>
+          <h1>{t("workerManagement")}</h1>
+          <p>{t("workerManagementSubtitle")}</p>
         </div>
 
         <button onClick={openAddForm}>
-          + Add Worker
+          <span aria-hidden="true">+</span> {t("addWorker")}
         </button>
       </div>
 
       <div className="workers-toolbar">
         <input
           type="search"
-          placeholder="Search name, email or service..."
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <span>Total workers: {workers.length}</span>
+        <span>{t("showingWorkers", { shown: filteredWorkers.length, total: workers.length })}</span>
       </div>
+
+      {notice && <div className="success-notice" role="status">{notice}</div>}
 
       {showForm && (
         <div className="worker-form-card">
-          <h2>{editingId ? "Edit Worker" : "Add Worker"}</h2>
+          <h2>{editingId ? t("editWorker") : t("addWorker")}</h2>
 
           <form onSubmit={handleSubmit}>
-            <label htmlFor="worker-name">Full name</label>
-            <input
-              id="worker-name"
-              value={form.name}
-              onChange={(e) =>
-                setForm({ ...form, name: e.target.value })
-              }
-              placeholder="Enter full name"
-              required
-            />
+            <div className="form-section-heading">
+              <h3>{t("appCredentials")}</h3>
+              <p>{t("credentialsNote")}</p>
+            </div>
 
-            <label htmlFor="worker-email">Email</label>
-            <input
-              id="worker-email"
-              type="email"
-              value={form.email}
-              onChange={(e) =>
-                setForm({ ...form, email: e.target.value })
-              }
-              placeholder="Enter email"
-              required
-            />
+            <div className="form-field">
+              <label htmlFor="worker-number">{t("workerNumber")}</label>
+              <input id="worker-number" value={form.workerNumber} readOnly />
+            </div>
 
-            <label htmlFor="worker-phone">Phone</label>
-            <input
-              id="worker-phone"
-              type="tel"
-              value={form.phone}
-              onChange={(e) =>
-                setForm({ ...form, phone: e.target.value })
-              }
-              placeholder="Enter phone number"
-              required
-            />
+            <div className="form-field">
+              <label htmlFor="worker-username">{t("username")}</label>
+              <input id="worker-username" value={form.username} onChange={(e) => { setForm({ ...form, username: e.target.value }); setFormError(""); }} placeholder={t("usernamePlaceholder")} autoComplete="off" required />
+            </div>
 
-            <label htmlFor="worker-service">Service</label>
-            <select
-              id="worker-service"
-              value={form.service}
-              onChange={(e) =>
-                setForm({ ...form, service: e.target.value })
-              }
-              required
-            >
-              <option value="">Select service</option>
-              <option value="Pickup">Pickup</option>
-              <option value="Delivery">Delivery</option>
-              <option value="Collection">Collection</option>
-              <option value="Other">Other</option>
-            </select>
+            <div className="form-field full-width-field">
+              <label htmlFor="worker-password">{t("accountPassword")}</label>
+              <input id="worker-password" type="password" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder={t("accountPasswordPlaceholder")} autoComplete="new-password" required />
+            </div>
+
+            {formError && <p className="form-error" role="alert">{formError}</p>}
+
+            <div className="form-section-heading personal-details-heading">
+              <h3>{t("workerDetails")}</h3>
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="worker-name">{t("fullName")}</label>
+              <input id="worker-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t("fullNamePlaceholder")} required />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="worker-email">{t("email")}</label>
+              <input id="worker-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder={t("emailPlaceholder")} required />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="worker-phone">{t("phone")}</label>
+              <input id="worker-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder={t("phonePlaceholder")} required />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="worker-service">{t("service")}</label>
+              <select id="worker-service" value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} required>
+                <option value="">{t("selectService")}</option>
+                <option value="Pickup">{t("pickup")}</option>
+                <option value="Delivery">{t("delivery")}</option>
+                <option value="Collection">{t("collection")}</option>
+                <option value="Other">{t("other")}</option>
+              </select>
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="worker-points">{t("totalPoints")}</label>
+              <input id="worker-points" type="number" min="0" value={form.points} onChange={(e) => setForm({ ...form, points: Math.max(0, Number(e.target.value)) })} placeholder={t("pointsPlaceholder")} required />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="worker-pickups">{t("medicalWastePickups")}</label>
+              <input id="worker-pickups" type="number" min="0" value={form.pickups} onChange={(e) => setForm({ ...form, pickups: Math.max(0, Number(e.target.value)) })} placeholder={t("pickupsPlaceholder")} required />
+            </div>
 
             <div className="worker-form-actions">
               <button type="submit">
-                {editingId ? "Save Changes" : "Add Worker"}
+                {editingId ? t("saveChanges") : t("addWorker")}
               </button>
 
               <button
@@ -191,7 +236,7 @@ function Workers() {
                 className="secondary-button"
                 onClick={() => setShowForm(false)}
               >
-                Cancel
+                {t("cancel")}
               </button>
             </div>
           </form>
@@ -202,35 +247,39 @@ function Workers() {
         <table className="workers-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Phone</th>
-              <th>Service</th>
-              <th>Actions</th>
+              <th>{t("fullName")}</th>
+              <th>{t("workerNumber")}</th>
+              <th>{t("username")}</th>
+              <th>{t("email")}</th>
+              <th>{t("phone")}</th>
+              <th>{t("service")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
 
           <tbody>
             {filteredWorkers.map((worker) => (
               <tr key={worker.id}>
-                <td>{worker.name}</td>
+                <td><Link className="worker-name-link" to={`/workers/${worker.id}`} title={t("viewWorker")}>{worker.name}</Link></td>
+                <td>{worker.workerNumber}</td>
+                <td>{worker.username}</td>
                 <td>{worker.email}</td>
                 <td>{worker.phone}</td>
-                <td>{worker.service}</td>
+                <td>{t(worker.service.toLowerCase() as "pickup" | "delivery" | "collection" | "other")}</td>
                 <td>
                   <div className="worker-actions">
                     <button
                       className="edit-button"
                       onClick={() => openEditForm(worker)}
                     >
-                      Edit
+                      {t("edit")}
                     </button>
 
                     <button
                       className="delete-button"
                       onClick={() => handleDelete(worker.id)}
                     >
-                      Delete
+                      {t("delete")}
                     </button>
                   </div>
                 </td>
@@ -239,16 +288,17 @@ function Workers() {
 
             {filteredWorkers.length === 0 && (
               <tr>
-                <td colSpan={5} className="empty-state">
+                <td colSpan={7} className="empty-state">
                   {search
-                    ? "No workers match your search."
-                    : "No workers added yet."}
+                    ? t("noSearchResults")
+                    : t("noWorkers")}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+      </main>
     </div>
   );
 }

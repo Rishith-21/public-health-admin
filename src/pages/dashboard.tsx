@@ -1,44 +1,44 @@
 
 import { useNavigate } from "react-router-dom";
+import AdminHeader from "../components/AdminHeader";
+import { useLocalization } from "../localization";
+
+const STORAGE_KEY = "admin_workers";
+
+function getWorkerCount() {
+  try {
+    const workers = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    return Array.isArray(workers) ? workers.length : 0;
+  } catch {
+    return 0;
+  }
+}
 
 function Dashboard() {
   const navigate = useNavigate();
-
-  function handleLogout() {
-    localStorage.removeItem("isLoggedIn");
-    navigate("/login");
-  }
+  const { t } = useLocalization();
+  const workerCount = getWorkerCount();
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <h1>Admin Dashboard</h1>
-
-        <button onClick={handleLogout}>
-          Logout
-        </button>
-      </header>
-
-      <main>
-        <h2>Welcome, Admin!</h2>
-        <p>Manage your application from here.</p>
-
-        <div className="dashboard-cards">
-          <div className="dashboard-card">
-            <h3>Total Workers</h3>
-            <p>0</p>
-          </div>
-
-          <div className="dashboard-card">
-            <h3>Total Users</h3>
-            <p>0</p>
-          </div>
-
-          <div className="dashboard-card">
-            <h3>Pending Requests</h3>
-            <p>0</p>
-          </div>
+    <div className="app-shell">
+      <AdminHeader />
+      <main className="page-content dashboard-content">
+        <div className="page-heading">
+          <h1>{t("welcome")}</h1>
+          <p>{t("dashboardSubtitle")}</p>
         </div>
+
+        <section className="worker-summary" aria-label={t("totalWorkers")}>
+          <div className="summary-icon" aria-hidden="true">●</div>
+          <div className="summary-copy">
+            <span>{t("totalWorkers")}</span>
+            <strong>{workerCount}</strong>
+            <small>{t("registeredWorkers")}</small>
+          </div>
+          <button type="button" onClick={() => navigate("/workers")}>
+            {t("manageWorkers")} <span aria-hidden="true">→</span>
+          </button>
+        </section>
       </main>
     </div>
   );

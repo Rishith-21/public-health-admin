@@ -1,11 +1,14 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+import { useLocalization } from "../localization";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const { t } = useLocalization();
 
   const navigate = useNavigate();
 
@@ -19,39 +22,41 @@ function Login() {
       localStorage.setItem("isLoggedIn", "true");
       navigate("/dashboard");
     } else {
-      setError("Invalid email or password");
+      setError(t("invalidLogin"));
     }
   }
 
   return (
     <div className="login-container">
+      <div className="login-language"><LanguageSwitcher /></div>
       <form className="login-card" onSubmit={handleLogin}>
-        <h1>Admin Login</h1>
-        <p>Sign in to access the admin panel.</p>
+        <div className="login-logo" aria-hidden="true">+</div>
+        <h1>{t("loginTitle")}</h1>
+        <p>{t("loginSubtitle")}</p>
 
-        <label htmlFor="email">Email</label>
+        <label htmlFor="email">{t("email")}</label>
         <input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
+          placeholder={t("emailPlaceholder")}
           required
         />
 
-        <label htmlFor="password">Password</label>
+        <label htmlFor="password">{t("password")}</label>
         <input
           id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter your password"
+          placeholder={t("passwordPlaceholder")}
           required
         />
 
         {error && <p className="error">{error}</p>}
 
-        <button type="submit">Login</button>
+        <button type="submit">{t("login")}</button>
       </form>
     </div>
   );
