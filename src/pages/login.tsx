@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LanguageSwitcher from "../components/LanguageSwitcher";
@@ -15,10 +14,10 @@ function Login() {
   function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (
-      email === "admin@gmail.com" &&
-      password === "admin123"
-    ) {
+    const expectedEmail = import.meta.env.VITE_ADMIN_EMAIL || "admin@gmail.com";
+    const expectedPassword = import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
+
+    if (email === expectedEmail && password === expectedPassword) {
       localStorage.setItem("isLoggedIn", "true");
       navigate("/dashboard");
     } else {

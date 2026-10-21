@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import AdminHeader from "../components/AdminHeader";
 import { formatWorkerNumber, getNextWorkerNumber, getStoredWorkers, type Worker, WORKERS_STORAGE_KEY } from "../data/workers";
 import { useLocalization } from "../localization";
 
@@ -130,8 +129,6 @@ function Workers() {
   });
 
   return (
-    <div className="app-shell">
-      <AdminHeader />
       <main className="workers-page">
       <div className="workers-header">
         <div>
@@ -299,7 +296,6 @@ function Workers() {
         </table>
       </div>
       </main>
-    </div>
   );
 }
 

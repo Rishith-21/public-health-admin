@@ -14,6 +14,17 @@ The React Compiler is enabled on this template. See [this documentation](https:/
 Note: This will impact Vite dev & build performances.
 You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
 
+## Mapbox setup
+
+The location page uses Mapbox GL JS. Copy `.env.example` to `.env`, add your public Mapbox token and optional custom style URI, and restart the Vite server:
+
+```env
+VITE_MAPBOX_PUBLIC_KEY=pk.your_public_mapbox_token
+VITE_MAPBOX_STYLE_URI=mapbox://styles/your-account/your-style-id
+```
+
+Use only a public `pk.` token in the browser. Do not use a secret `sk.` token.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:

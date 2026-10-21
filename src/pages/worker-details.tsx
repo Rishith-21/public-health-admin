@@ -1,5 +1,4 @@
 import { Link, useParams } from "react-router-dom";
-import AdminHeader from "../components/AdminHeader";
 import { getStoredWorkers } from "../data/workers";
 import { useLocalization } from "../localization";
 
@@ -10,8 +9,6 @@ function WorkerDetails() {
 
   if (!worker) {
     return (
-      <div className="app-shell">
-        <AdminHeader />
         <main className="worker-details-page">
           <Link className="back-link" to="/workers">← {t("backToWorkers")}</Link>
           <section className="not-found-panel">
@@ -19,15 +16,12 @@ function WorkerDetails() {
             <p>{t("workerNotFoundDesc")}</p>
           </section>
         </main>
-      </div>
     );
   }
 
   const serviceKey = worker.service.toLowerCase() as "pickup" | "delivery" | "collection" | "other";
 
   return (
-    <div className="app-shell">
-      <AdminHeader />
       <main className="worker-details-page">
         <Link className="back-link" to="/workers">← {t("backToWorkers")}</Link>
 
@@ -69,7 +63,6 @@ function WorkerDetails() {
           </dl>
         </section>
       </main>
-    </div>
   );
 }
 
